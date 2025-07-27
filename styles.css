@@ -1,0 +1,178 @@
+/* 🌐 Variables globales */
+:root {
+  --color-fondo: #f8f9fa;
+  --color-texto: #333;
+  --color-sidebar: #2c3e50;
+  --color-content: #ecf0f1;
+  --color-acento: #4caf50;
+  --color-acento-hover: #45a049;
+  --radio: 8px;
+  --sombra: 0 0 8px rgba(0,0,0,0.1);
+  --fuente-base: 'Segoe UI', sans-serif;
+}
+
+/* 🔤 Tipografía y fondo general */
+body {
+  font-family: var(--fuente-base);
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  margin: 0;
+  padding: 0;
+}
+
+/* 🧱 Layout base */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: var(--color-sidebar);
+  color: white;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.sidebar h3 {
+  margin-top: 0;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 10px 0;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.sidebar a:hover {
+  text-decoration: underline;
+}
+
+/* 📦 Contenido principal */
+.content {
+  flex: 1;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: var(--color-content);
+}
+
+/* 📝 Formularios generales */
+form {
+  max-width: 400px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  box-shadow: var(--sombra);
+  border-radius: var(--radio);
+}
+
+form label {
+  display: block;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+form input,
+form select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+form button {
+  margin-top: 16px;
+  padding: 10px;
+  width: 100%;
+  background-color: var(--color-acento);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+form button:hover {
+  background-color: var(--color-acento-hover);
+}
+
+/* 👁️ Control de vistas */
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+/* 📋 Lista de categorías (uso común) */
+.category-list,
+#categoryList {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+.category-list li,
+#categoryList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-top: 8px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.1);
+}
+
+.category-list button,
+#categoryList button {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: transform 0.2s ease;
+}
+
+.category-list button:hover,
+#categoryList button:hover {
+  transform: scale(1.2);
+}
+
+/* 📱 Responsive */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    text-align: center;
+  }
+
+  .content {
+    padding: 10px;
+  }
+
+  form {
+    margin: 20px auto;
+  }
+
+  .sidebar-nav a.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+}
+

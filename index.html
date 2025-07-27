@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finanzas Personales</title>
+
+  <!-- 💅 Estilos base -->
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/categorias.css" />
+
+  <!-- 🔧 Favicon temporal para evitar errores -->
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Finanzas</h3>
+      <nav>
+        <ul class="sidebar-nav">
+          <li><a href="#" data-target="dashboardView">Dashboard</a></li>
+          <li><a href="#" data-target="categoriasView">Categorías</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <!-- 📊 Dashboard -->
+      <section id="dashboardView" class="view active">
+        <h2>Resumen Financiero</h2>
+        <div id="dashboardResumen"></div>
+        <p id="dashboardTotal"></p>
+      </section>
+
+      <!-- 🗂️ Categorías -->
+      <section id="categoriasView" class="view">
+        <h2>Gestión de Categorías</h2>
+        <form id="categoryForm">
+          <label for="categoryName">Categoría:</label>
+          <input type="text" id="categoryName" required />
+          <input type="hidden" id="editingCategoryId" />
+          <button type="submit">Guardar</button>
+        </form>
+        <ul id="categoryList" class="category-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <!-- 🚀 Script de arranque -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
