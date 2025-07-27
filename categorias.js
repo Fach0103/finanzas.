@@ -1,4 +1,4 @@
-import { financeDB } from './db.js';
+import { financeDB } from '../db.js';
 
 export function inicializarCategorias() {
   cargarCategoriasSelect();
@@ -6,7 +6,6 @@ export function inicializarCategorias() {
   renderizarListaCategorias();
 }
 
-/* 🔽 Llena el <select> con las categorías disponibles */
 function cargarCategoriasSelect() {
   financeDB.getAllCategories()
     .then(categories => {
@@ -26,7 +25,6 @@ function cargarCategoriasSelect() {
     });
 }
 
-/* 📝 Habilita el formulario de alta/edición */
 function prepararFormularioCategorias() {
   const form = document.getElementById('categoryForm');
   form?.addEventListener('submit', async (e) => {
@@ -49,7 +47,6 @@ function prepararFormularioCategorias() {
   });
 }
 
-/* 📋 Renderiza la lista de categorías con botones */
 async function renderizarListaCategorias() {
   const lista = document.getElementById('categoryList');
   lista.innerHTML = '';

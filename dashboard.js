@@ -1,10 +1,9 @@
-import { financeDB } from './db.js';
+import { financeDB } from '../db.js';
 
 export function inicializarDashboard() {
   cargarResumen();
 }
 
-/* 🧾 Muestra resumen financiero por categoría */
 async function cargarResumen() {
   const [categorias, transacciones, presupuestos] = await Promise.all([
     financeDB.getAllCategories(),
@@ -14,7 +13,6 @@ async function cargarResumen() {
 
   const contenedor = document.getElementById('dashboardResumen');
   contenedor.innerHTML = '';
-
   let gastoTotal = 0;
 
   categorias.forEach(cat => {
@@ -41,7 +39,6 @@ async function cargarResumen() {
   totalContenedor.textContent = `Gasto total acumulado: $${gastoTotal.toFixed(2)}`;
 }
 
-/* 🔄 Utilidad para obtener datos de stores */
 function getAllFromStore(storeName) {
   return new Promise((resolve, reject) => {
     const tx = financeDB.db.transaction([storeName], 'readonly');

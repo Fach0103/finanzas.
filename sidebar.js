@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+export function inicializarNavegacion() {
   const vistas = document.querySelectorAll('.view');
 
   const botones = Array.from(document.querySelectorAll('.sidebar-nav a'))
@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const vistaExiste = document.getElementById(destino);
 
       if (!vistaExiste) {
-        // 👁️ Marcar como desactivado visualmente
         boton.classList.add('disabled');
         boton.title = 'Función en desarrollo';
       }
@@ -24,10 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
   botones.forEach(({ boton, destino, vistaExiste }) => {
     boton.addEventListener('click', e => {
       e.preventDefault();
-      if (!vistaExiste) return; // 🛑 No activar si no existe
+      if (!vistaExiste) return;
       mostrarVista(destino);
     });
   });
 
   mostrarVista('dashboardView');
-});
+}
