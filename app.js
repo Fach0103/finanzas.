@@ -3,6 +3,7 @@ import { inicializarNavegacion } from './js/sidebar.js';
 import { inicializarCategorias } from './js/categorias.js';
 import { inicializarDashboard } from './js/dashboard.js';
 import { TransaccionesManager } from './js/transaccion.js';
+
 import {
   definirPresupuesto,
   compararPresupuesto,
@@ -11,7 +12,9 @@ import {
   definirIngresoEstimado,
   compararIngresos,
   proyectarIngresosMensuales,
-  inicializarPresupuesto
+  inicializarPresupuesto,
+  calcularDesviaciones,
+  obtenerBalanceMensual
 } from './js/presupuesto.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -19,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   inicializarNavegacion();
   inicializarCategorias();
   inicializarDashboard();
-  await inicializarPresupuesto(); // 🔄 Carga ingresos y egresos estimados + reales
+  await inicializarPresupuesto();
 
   const manager = new TransaccionesManager('#lista-transacciones');
   let modoEdicionId = null;
@@ -27,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const lista = await financeDB.obtenerTodas();
   manager.cargarDesdeLista(lista);
 
+  // 📝 Gestión del formulario de transacción
   const form = document.querySelector('#form-transaccion');
   form?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -46,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     inicializarDashboard();
   });
 
+  // 🛠️ Edición/Eliminación de transacciones
   document.querySelector('#lista-transacciones')?.addEventListener('click', async e => {
     const id = e.target.dataset.id;
     if (e.target.classList.contains('btn-editar')) {
@@ -67,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 🔶 Presupuesto de Egresos
+  // 🔶 EGRESOS – Gestión de presupuesto
   document.querySelector('#btnGuardarPresupuesto')?.addEventListener('click', () => {
     const categoria = document.querySelector('#inputCategoria').value;
     const monto = parseFloat(document.querySelector('#inputMonto').value);
@@ -97,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `📈 Proyección mensual de egresos: ${proyeccion}`;
   });
 
-  // 🔷 Presupuesto de Ingresos
+  // 🔷 INGRESOS – Estimación y análisis
   document.querySelector('#btnGuardarIngreso')?.addEventListener('click', async () => {
     const monto = parseFloat(document.querySelector('#inputIngresoMonto').value);
     const mes = parseInt(document.querySelector('#inputIngresoMes').value);
@@ -121,5 +126,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     const proyeccion = proyectarIngresosMensuales(mes);
     document.querySelector('#resultado-ingresos').innerText =
       `📈 Proyección mensual de ingresos: ${proyeccion}`;
+  });
+
+  // 🚨 DESVIACIONES – Análisis por categoría
+  document.querySelector('#btnDesviaciones')?.addEventListener('click', () => {
+    const mes = parseInt(document.querySelector('#inputMes').value);
+    const anio = parseInt(document.querySelector('#inputAnio').value);
+    const resultado = calcularDesviaciones(anio, mes);
+
+    let mensaje = `📊 Desviaciones en el presupuesto ${mes}/${anio}:\n\n`;
+    for (const categoria in resultado) {
+      const { estimado, real, desviacion, alerta } = resultado[categoria];
+      mensaje += `
+🔹 ${categoria}
+   Estimado: ${estimado}
+   Real: ${real}
+   Desviación: ${desviacion}
+   ${alerta ? '⚠️ ¡Presupuesto superado!' : '✅ Dentro del límite'}
+\n`;
+    }
+
+    document.querySelector('#resultado-desviaciones').innerText = mensaje;
+  });
+
+  // 📊 BALANCE GENERAL – Comparativo de ingresos/egresos
+  document.querySelector('#btnBalanceGeneral')?.addEventListener('click', () => {
+    const mes = parseInt(document.querySelector('#inputMes').value);
+    const anio = parseInt(document.querySelector('#inputAnio').value);
+    const resumen = obtenerBalanceMensual(anio, mes);
+
+    const mensaje = `
+📅 Periodo: ${mes}/${anio}
+🟩 Ingreso Estimado: ${resumen.ingresoEstimado}
+🟧 Egreso Estimado: ${resumen.egresosEstimado}
+💰 Saldo Estimado: ${resumen.saldoEstimado}
+
+✅ Ingreso Real: ${resumen.ingresoReal}
+❌ Egreso Real: ${resumen.egresosReal}
+🧾 Saldo Real: ${resumen.saldoReal}
+    `;
+    document.querySelector('#resultado-presupuesto').innerText = mensaje;
   });
 });

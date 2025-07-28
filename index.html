@@ -75,7 +75,7 @@
       </section>
 
       <!-- 📈 Presupuesto Estimado -->
-      <section id="presupuestoView" class="view" style="display:none;">
+      <section id="presupuestoView" class="view">
         <h2>Gestión de Presupuesto Estimado</h2>
 
         <!-- 🟧 Egresos -->
@@ -100,9 +100,15 @@
             <button type="button" id="btnGuardarPresupuesto">Guardar</button>
             <button type="button" id="btnComparar">Comparar vs Real</button>
             <button type="button" id="btnProyeccion">Proyección</button>
+            <button type="button" id="btnBalanceGeneral">Resumen General</button>
           </div>
         </form>
         <div class="presupuesto-result" id="resultado-presupuesto"></div>
+
+        <!-- 🚨 Desviaciones -->
+        <h3>Desviaciones por Categoría</h3>
+        <button type="button" id="btnDesviaciones">Ver Desviaciones</button>
+        <div class="presupuesto-result" id="resultado-desviaciones"></div>
 
         <!-- 💰 Ingresos -->
         <h3>Presupuesto de Ingresos Estimados</h3>

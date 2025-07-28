@@ -102,3 +102,50 @@ export function obtenerIngresoEstimado(anio, mes) {
 export function obtenerIngresoReal(anio, mes) {
   return ingresosReales[anio]?.[mes] || 0;
 }
+
+///////////////////////////////////////
+// 🚨 Desviaciones y Alertas
+///////////////////////////////////////
+
+export function calcularDesviaciones(anio, mes) {
+  const estimado = egresosEstimados[anio]?.[mes] || {};
+  const real = gastosReales[anio]?.[mes] || {};
+
+  const resultado = {};
+
+  for (const categoria in estimado) {
+    const montoEstimado = estimado[categoria] || 0;
+    const montoReal = real[categoria] || 0;
+    const desviacion = montoReal - montoEstimado;
+
+    resultado[categoria] = {
+      estimado: montoEstimado,
+      real: montoReal,
+      desviacion,
+      alerta: desviacion > 0
+    };
+  }
+
+  return resultado;
+}
+
+///////////////////////////////////////
+// 📊 Balance General Mensual
+///////////////////////////////////////
+
+export function obtenerBalanceMensual(anio, mes) {
+  const ingresoEstimado = ingresosEstimados[anio]?.[mes] || 0;
+  const ingresoReal = ingresosReales[anio]?.[mes] || 0;
+
+  const egresosEstimado = Object.values(egresosEstimados[anio]?.[mes] || {}).reduce((a, b) => a + b, 0);
+  const egresosReal = Object.values(gastosReales[anio]?.[mes] || {}).reduce((a, b) => a + b, 0);
+
+  return {
+    ingresoEstimado,
+    ingresoReal,
+    egresosEstimado,
+    egresosReal,
+    saldoEstimado: ingresoEstimado - egresosEstimado,
+    saldoReal: ingresoReal - egresosReal
+  };
+}
