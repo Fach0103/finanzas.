@@ -1,5 +1,7 @@
-import { financeDB } from '../db.js';
+import { financeDB } from '../db.js'; // ✅ Este sí es modular
 
+
+// 🟢 Usamos directamente la función global
 export function inicializarDashboard() {
   cargarResumen();
 }
@@ -37,6 +39,13 @@ async function cargarResumen() {
 
   const totalContenedor = document.getElementById('dashboardTotal');
   totalContenedor.textContent = `Gasto total acumulado: $${gastoTotal.toFixed(2)}`;
+
+  // 📊 Renderizado visual directamente desde función global
+  if (typeof inicializarGraficosDashboard === 'function') {
+    inicializarGraficosDashboard(categorias, transacciones, presupuestos);
+  } else {
+    console.warn('⚠️ charts.js no está disponible o no se ha cargado correctamente.');
+  }
 }
 
 function getAllFromStore(storeName) {

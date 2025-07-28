@@ -6,25 +6,31 @@ let gastosReales = {};
 let ingresosEstimados = {};
 let ingresosReales = {};
 
-// 🔄 Carga inicial general
-export async function inicializarPresupuesto() {
+// 🔁 Recarga completa de datos
+async function recargarDatosEnMemoria() {
   egresosEstimados = await financeDB.obtenerPresupuestos();
   gastosReales = await financeDB.obtenerGastos();
   ingresosEstimados = await financeDB.obtenerTodosIngresosEstimados();
   ingresosReales = await financeDB.obtenerIngresosReales();
 }
 
+// 🔄 Inicialización
+export async function inicializarPresupuesto() {
+  await recargarDatosEnMemoria();
+}
+
 ///////////////////////////////////////
 // 🟧 EGRESOS – Presupuesto estimado
 ///////////////////////////////////////
 
-export function definirPresupuesto(anio, mes, categoria, monto) {
+export async function definirPresupuesto(anio, mes, categoria, monto) {
   if (!egresosEstimados[anio]) egresosEstimados[anio] = {};
   if (!egresosEstimados[anio][mes]) egresosEstimados[anio][mes] = {};
   egresosEstimados[anio][mes][categoria] = monto;
 
   const presupuesto = { anio, mes, categoria, monto };
-  financeDB.guardarPresupuesto(presupuesto);
+  await financeDB.guardarPresupuesto(presupuesto);
+  await recargarDatosEnMemoria();
 }
 
 export function compararPresupuesto(anio, mes) {
@@ -68,6 +74,7 @@ export async function definirIngresoEstimado(anio, mes, monto) {
   ingresosEstimados[anio][mes] = monto;
 
   await financeDB.guardarPresupuestoIngreso({ anio, mes, monto });
+  await recargarDatosEnMemoria();
 }
 
 export function compararIngresos(anio, mes) {
@@ -129,14 +136,37 @@ export function calcularDesviaciones(anio, mes) {
   return resultado;
 }
 
+// 🔍 Categorías críticas por desviaciones frecuentes
+export function detectarCategoriasCriticas() {
+  const criticas = {};
+
+  for (const anio in egresosEstimados) {
+    for (const mes in egresosEstimados[anio]) {
+      const alertas = calcularDesviaciones(anio, mes);
+      for (const categoria in alertas) {
+        if (alertas[categoria].alerta) {
+          criticas[categoria] ||= 0;
+          criticas[categoria]++;
+        }
+      }
+    }
+  }
+
+  return Object.entries(criticas)
+    .sort((a, b) => b[1] - a[1])
+    .reduce((acc, [cat, count]) => {
+      acc[cat] = count;
+      return acc;
+    }, {});
+}
+
 ///////////////////////////////////////
-// 📊 Balance General Mensual
+// 📊 Balance General y Análisis anual
 ///////////////////////////////////////
 
 export function obtenerBalanceMensual(anio, mes) {
   const ingresoEstimado = ingresosEstimados[anio]?.[mes] || 0;
   const ingresoReal = ingresosReales[anio]?.[mes] || 0;
-
   const egresosEstimado = Object.values(egresosEstimados[anio]?.[mes] || {}).reduce((a, b) => a + b, 0);
   const egresosReal = Object.values(gastosReales[anio]?.[mes] || {}).reduce((a, b) => a + b, 0);
 
@@ -148,4 +178,19 @@ export function obtenerBalanceMensual(anio, mes) {
     saldoEstimado: ingresoEstimado - egresosEstimado,
     saldoReal: ingresoReal - egresosReal
   };
+}
+
+// 📆 Total anual por categoría
+export function obtenerResumenAnual(anio) {
+  const resumen = {};
+  const gastos = gastosReales[anio] || {};
+
+  for (const mes in gastos) {
+    for (const categoria in gastos[mes]) {
+      resumen[categoria] ||= 0;
+      resumen[categoria] += gastos[mes][categoria];
+    }
+  }
+
+  return resumen;
 }

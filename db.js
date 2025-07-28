@@ -9,6 +9,7 @@ class FinanceDB {
     ];
   }
 
+  // 🔌 Inicializar la base de datos
   async init() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.dbVersion);
@@ -16,7 +17,6 @@ class FinanceDB {
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
 
-        // ✅ Verificar antes de crear cada store
         if (!db.objectStoreNames.contains('categories')) {
           db.createObjectStore('categories', { keyPath: 'id', autoIncrement: true });
         }
@@ -40,11 +40,12 @@ class FinanceDB {
         const tx = this.db.transaction(['categories'], 'readwrite');
         const store = tx.objectStore('categories');
 
-        const checkRequest = store.getAll();
-        checkRequest.onsuccess = () => {
-          const existing = checkRequest.result.map(cat => cat.name.toLowerCase());
+        store.getAll().onsuccess = (e) => {
+          const existing = e.target.result.map(cat => cat.name.toLowerCase());
           this.defaultCategories.forEach(name => {
-            if (!existing.includes(name.toLowerCase())) store.add({ name });
+            if (!existing.includes(name.toLowerCase())) {
+              store.add({ name });
+            }
           });
         };
 
@@ -55,7 +56,7 @@ class FinanceDB {
     });
   }
 
-  // 📂 Métodos de Categorías
+  // 📂 Categorías
   getAllCategories() {
     return this.#getAllFromStore('categories');
   }
@@ -74,9 +75,7 @@ class FinanceDB {
       const catStore = tx.objectStore('categories');
       const tranStore = tx.objectStore('transactions');
 
-      const index = tranStore.index('categoryId');
-      const cursorRequest = index.openCursor(IDBKeyRange.only(idCategoria));
-
+      const cursorRequest = tranStore.index('categoryId').openCursor(IDBKeyRange.only(idCategoria));
       cursorRequest.onsuccess = (event) => {
         const cursor = event.target.result;
         if (cursor) {
@@ -85,9 +84,8 @@ class FinanceDB {
         }
       };
 
-      const deleteCatRequest = catStore.delete(idCategoria);
-      deleteCatRequest.onsuccess = () => resolve(true);
-      deleteCatRequest.onerror = () => reject(deleteCatRequest.error);
+      catStore.delete(idCategoria).onsuccess = () => resolve(true);
+      catStore.delete(idCategoria).onerror = () => reject(catStore.delete(idCategoria).error);
     });
   }
 
@@ -104,11 +102,10 @@ class FinanceDB {
     return this.#deleteFromStore('transactions', id);
   }
 
-  // 🟧 Presupuestos de Egresos
+  // 🟧 Presupuesto de Egresos
   guardarPresupuesto(presupuesto) {
     const id = `${presupuesto.categoria}-${presupuesto.mes}-${presupuesto.anio}`;
-    const registro = { id, ...presupuesto };
-    return this.#putToStore('budgets', registro);
+    return this.#putToStore('budgets', { id, ...presupuesto });
   }
 
   obtenerPresupuestoPorId(id) {
@@ -161,11 +158,10 @@ class FinanceDB {
     });
   }
 
-  // 🟩 Presupuestos de Ingresos
+  // 🟩 Presupuesto de Ingresos
   guardarPresupuestoIngreso(presupuesto) {
     const id = `${presupuesto.mes}-${presupuesto.anio}`;
-    const registro = { id, ...presupuesto };
-    return this.#putToStore('incomeBudgets', registro);
+    return this.#putToStore('incomeBudgets', { id, ...presupuesto });
   }
 
   obtenerTodosIngresosEstimados() {
@@ -212,56 +208,47 @@ class FinanceDB {
     });
   }
 
-  // 🔒 Métodos privados
+  // 🛠️ Métodos privados internos
   #getAllFromStore(storeName) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName], 'readonly');
-      const store = tx.objectStore(storeName);
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      tx.objectStore(storeName).getAll().onsuccess = (e) => resolve(e.target.result);
+      tx.objectStore(storeName).getAll().onerror = (e) => reject(e.target.error);
     });
   }
 
   #getFromStore(storeName, id) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName], 'readonly');
-      const store = tx.objectStore(storeName);
-      const request = store.get(id);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      tx.objectStore(storeName).get(id).onsuccess = (e) => resolve(e.target.result);
+      tx.objectStore(storeName).get(id).onerror = (e) => reject(e.target.error);
     });
   }
 
   #putToStore(storeName, object) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName], 'readwrite');
-      const store = tx.objectStore(storeName);
-      const request = store.put(object);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => reject(request.error);
+      tx.objectStore(storeName).put(object).onsuccess = () => resolve(true);
+      tx.objectStore(storeName).put(object).onerror = (e) => reject(e.target.error);
     });
   }
 
   #addToStore(storeName, object) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName], 'readwrite');
-      const store = tx.objectStore(storeName);
-      const request = store.add(object);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      tx.objectStore(storeName).add(object).onsuccess = (e) => resolve(e.target.result);
+      tx.objectStore(storeName).add(object).onerror = (e) => reject(e.target.error);
     });
   }
 
   #deleteFromStore(storeName, id) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName], 'readwrite');
-      const store = tx.objectStore(storeName);
-      const request = store.delete(id);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => reject(request.error);
+      tx.objectStore(storeName).delete(id).onsuccess = () => resolve(true);
+      tx.objectStore(storeName).delete(id).onerror = (e) => reject(e.target.error);
     });
   }
 }
 
+// 🎯 Instancia exportada para uso global
 export const financeDB = new FinanceDB();

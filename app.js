@@ -30,6 +30,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const lista = await financeDB.obtenerTodas();
   manager.cargarDesdeLista(lista);
 
+  // 📊 Inicializar gráficos del dashboard
+  const presupuestos = obtenerPresupuesto(); // Función global
+  inicializarGraficosDashboard([], lista, presupuestos); // Función de charts.js
+
   // 📝 Gestión del formulario de transacción
   const form = document.querySelector('#form-transaccion');
   form?.addEventListener('submit', async e => {
@@ -48,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     form.reset();
     modoEdicionId = null;
     inicializarDashboard();
+    inicializarGraficosDashboard([], actualizadas, obtenerPresupuesto());
   });
 
   // 🛠️ Edición/Eliminación de transacciones
@@ -69,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const actualizadas = await financeDB.obtenerTodas();
       manager.cargarDesdeLista(actualizadas);
       inicializarDashboard();
+      inicializarGraficosDashboard([], actualizadas, obtenerPresupuesto());
     }
   });
 
@@ -81,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     definirPresupuesto(anio, mes, categoria, monto);
     document.querySelector('#resultado-presupuesto').innerText = '✅ Presupuesto de egreso guardado.';
+    inicializarGraficosDashboard([], lista, obtenerPresupuesto());
   });
 
   document.querySelector('#btnComparar')?.addEventListener('click', () => {
@@ -110,6 +117,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await definirIngresoEstimado(anio, mes, monto);
     document.querySelector('#resultado-ingresos').innerText = '✅ Ingreso estimado guardado.';
+    const actualizadas = await financeDB.obtenerTodas();
+    inicializarGraficosDashboard([], actualizadas, obtenerPresupuesto());
   });
 
   document.querySelector('#btnCompararIngreso')?.addEventListener('click', () => {
