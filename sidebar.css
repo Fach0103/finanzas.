@@ -1,47 +1,37 @@
-#categoriasView {
+#transaccionesView {
   padding: 20px;
 }
 
-#categoryForm {
+#form-transaccion {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
-  margin-bottom: 20px;
+  margin-top: 20px;
 }
 
-#categoryName {
-  flex: 1;
+#form-transaccion input,
+#form-transaccion select {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 6px;
+  flex: 1 1 180px;
 }
 
-#categoryList {
-  list-style: none;
-  padding: 0;
-}
-
-#categoryList li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  margin-bottom: 6px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-#categoryList button {
-  background: none;
+#form-transaccion button {
+  padding: 8px 12px;
+  background-color: #2ecc71;
+  color: white;
   border: none;
-  font-size: 16px;
+  border-radius: 6px;
   cursor: pointer;
-  margin-left: 6px;
-  transition: transform 0.2s;
+  transition: background-color 0.3s ease;
 }
 
-#categoryList button:hover {
-  transform: scale(1.2);
+#form-transaccion button:hover {
+  background-color: #27ae60;
+}
+
+#lista-transacciones {
+  margin-top: 20px;
 }

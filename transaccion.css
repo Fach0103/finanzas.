@@ -1,0 +1,50 @@
+.transaccion-item {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background-color: #f9f9f9;
+  border-left: 4px solid #ccc;
+  border-radius: 6px;
+  font-family: 'Segoe UI', sans-serif;
+  transition: background 0.3s ease;
+}
+
+.transaccion-item:hover {
+  background-color: #eef;
+}
+
+.transaccion-tipo {
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-align: center;
+  width: fit-content;
+}
+
+.transaccion-ingreso {
+  color: #fff;
+  background-color: #2ecc71;
+  border-left: 4px solid #27ae60;
+}
+
+.transaccion-egreso {
+  color: #fff;
+  background-color: #e74c3c;
+  border-left: 4px solid #c0392b;
+}
+
+.transaccion-monto {
+  color: #333;
+  font-size: 1rem;
+  text-align: right;
+}
+
+.transaccion-categoria,
+.transaccion-descripcion,
+.transaccion-fecha {
+  color: #666;
+  font-size: 0.9rem;
+}

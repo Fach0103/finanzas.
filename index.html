@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
   <link rel="stylesheet" href="css/categorias.css" />
+  <link rel="stylesheet" href="css/transaccion.css" />
+  <link rel="stylesheet" href="css/presupuesto.css" />
 
   <!-- 🔧 Favicon temporal para evitar errores -->
   <link rel="icon" href="data:,">
@@ -20,7 +22,9 @@
       <nav>
         <ul class="sidebar-nav">
           <li><a href="#" data-target="dashboardView">Dashboard</a></li>
+          <li><a href="#" data-target="transaccionesView">Transacciones</a></li>
           <li><a href="#" data-target="categoriasView">Categorías</a></li>
+          <li><a href="#" data-target="presupuestoView">Presupuesto</a></li>
         </ul>
       </nav>
     </aside>
@@ -33,6 +37,31 @@
         <p id="dashboardTotal"></p>
       </section>
 
+      <!-- 💸 Transacciones -->
+      <section id="transaccionesView" class="view">
+        <h2>Historial de Transacciones</h2>
+        <div id="lista-transacciones"></div>
+        <form id="form-transaccion">
+          <fieldset>
+            <legend>Agregar Transacción</legend>
+            <label for="tipo">Tipo:</label>
+            <select id="tipo" required>
+              <option value="ingreso">Ingreso</option>
+              <option value="egreso">Egreso</option>
+            </select>
+            <label for="monto">Monto:</label>
+            <input type="number" id="monto" step="0.01" required />
+            <label for="categoria">Categoría:</label>
+            <input type="text" id="categoria" required />
+            <label for="fecha">Fecha:</label>
+            <input type="date" id="fecha" required />
+            <label for="descripcion">Descripción:</label>
+            <input type="text" id="descripcion" required />
+            <button type="submit">Registrar</button>
+          </fieldset>
+        </form>
+      </section>
+
       <!-- 🗂️ Categorías -->
       <section id="categoriasView" class="view">
         <h2>Gestión de Categorías</h2>
@@ -43,6 +72,54 @@
           <button type="submit">Guardar</button>
         </form>
         <ul id="categoryList" class="category-list"></ul>
+      </section>
+
+      <!-- 📈 Presupuesto Estimado -->
+      <section id="presupuestoView" class="view" style="display:none;">
+        <h2>Gestión de Presupuesto Estimado</h2>
+
+        <!-- 🟧 Egresos -->
+        <form id="form-presupuesto">
+          <label for="inputCategoria">Categoría:</label>
+          <select id="inputCategoria">
+            <option value="Alimentación">Alimentación</option>
+            <option value="Transporte">Transporte</option>
+            <option value="Ocio">Ocio</option>
+            <option value="Servicios">Servicios</option>
+            <option value="Salud">Salud</option>
+            <option value="Educación">Educación</option>
+            <option value="Otros">Otros</option>
+          </select>
+          <label for="inputMonto">Monto estimado:</label>
+          <input type="number" id="inputMonto" step="0.01" />
+          <label for="inputMes">Mes:</label>
+          <input type="number" id="inputMes" min="1" max="12" />
+          <label for="inputAnio">Año:</label>
+          <input type="number" id="inputAnio" min="2000" max="2100" />
+          <div class="presupuesto-buttons">
+            <button type="button" id="btnGuardarPresupuesto">Guardar</button>
+            <button type="button" id="btnComparar">Comparar vs Real</button>
+            <button type="button" id="btnProyeccion">Proyección</button>
+          </div>
+        </form>
+        <div class="presupuesto-result" id="resultado-presupuesto"></div>
+
+        <!-- 💰 Ingresos -->
+        <h3>Presupuesto de Ingresos Estimados</h3>
+        <form id="form-ingresos">
+          <label for="inputIngresoMonto">Monto estimado:</label>
+          <input type="number" id="inputIngresoMonto" step="0.01" />
+          <label for="inputIngresoMes">Mes:</label>
+          <input type="number" id="inputIngresoMes" min="1" max="12" />
+          <label for="inputIngresoAnio">Año:</label>
+          <input type="number" id="inputIngresoAnio" min="2000" max="2100" />
+          <div class="ingreso-buttons">
+            <button type="button" id="btnGuardarIngreso">Guardar</button>
+            <button type="button" id="btnCompararIngreso">Comparar vs Real</button>
+            <button type="button" id="btnProyeccionIngreso">Proyección</button>
+          </div>
+        </form>
+        <div class="presupuesto-result" id="resultado-ingresos"></div>
       </section>
     </main>
   </div>
