@@ -1,11 +1,17 @@
-import { financeDB } from '../db.js'; // ✅ Este sí es modular
+import { financeDB } from '../db.js';
+import { mostrarMensaje } from './utils.js';
+import { inicializarGraficosDashboard } from './charts.js';
 
-
-// 🟢 Usamos directamente la función global
+/**
+ * 🔄 Inicializa el resumen visual del dashboard
+ */
 export function inicializarDashboard() {
   cargarResumen();
 }
 
+/**
+ * 📊 Carga los datos y actualiza el dashboard
+ */
 async function cargarResumen() {
   const [categorias, transacciones, presupuestos] = await Promise.all([
     financeDB.getAllCategories(),
@@ -19,7 +25,7 @@ async function cargarResumen() {
 
   categorias.forEach(cat => {
     const gastoCat = transacciones
-      .filter(t => t.categoryId === cat.id)
+      .filter(t => t.categoryId === cat.id && t.tipo === 'egreso')
       .reduce((sum, t) => sum + t.amount, 0);
 
     const presupuesto = presupuestos.find(p => p.categoryId === cat.id);
@@ -29,6 +35,10 @@ async function cargarResumen() {
 
     const item = document.createElement('div');
     item.classList.add('dashboard-item');
+    if (limite && gastoCat > limite) {
+      item.classList.add('exceso-gasto');
+    }
+
     item.innerHTML = `
       <h4>${cat.name}</h4>
       <p>Gasto: $${gastoCat.toFixed(2)}</p>
@@ -37,17 +47,17 @@ async function cargarResumen() {
     contenedor.appendChild(item);
   });
 
-  const totalContenedor = document.getElementById('dashboardTotal');
-  totalContenedor.textContent = `Gasto total acumulado: $${gastoTotal.toFixed(2)}`;
+  mostrarMensaje('dashboardTotal', `Gasto total acumulado: $${gastoTotal.toFixed(2)}`);
 
-  // 📊 Renderizado visual directamente desde función global
-  if (typeof inicializarGraficosDashboard === 'function') {
-    inicializarGraficosDashboard(categorias, transacciones, presupuestos);
-  } else {
-    console.warn('⚠️ charts.js no está disponible o no se ha cargado correctamente.');
-  }
+  // 🧩 Visualizaciones gráficas
+  inicializarGraficosDashboard(categorias, transacciones, presupuestos);
 }
 
+/**
+ * 📂 Obtiene todos los registros de un store
+ * @param {string} storeName
+ * @returns {Promise<any[]>}
+ */
 function getAllFromStore(storeName) {
   return new Promise((resolve, reject) => {
     const tx = financeDB.db.transaction([storeName], 'readonly');

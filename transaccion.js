@@ -41,13 +41,13 @@ export class TransaccionesManager {
     this.contenedor.appendChild(transaccion.renderizar());
   }
 
-  cargarDesdeLista(lista) {
+  cargarDesdeLista(lista = []) {
     this.transacciones = [];
     this.contenedor.innerHTML = '';
     lista.forEach(data => this.agregar(data));
   }
 
-  buscarPorTexto(texto) {
+  buscarPorTexto(texto = '') {
     const filtro = texto.toLowerCase();
     const resultados = this.transacciones.filter(t =>
       t.descripcion.toLowerCase().includes(filtro) ||
@@ -56,7 +56,7 @@ export class TransaccionesManager {
     this._renderizarFiltrados(resultados);
   }
 
-  filtrarPor(tipo, categoria) {
+  filtrarPor(tipo = 'todos', categoria = 'todos') {
     const resultados = this.transacciones.filter(t =>
       (tipo === 'todos' || t.tipo === tipo) &&
       (categoria === 'todos' || t.categoria === categoria)
@@ -69,7 +69,7 @@ export class TransaccionesManager {
     this._renderizarFiltrados(this.transacciones);
   }
 
-  _renderizarFiltrados(lista) {
+  _renderizarFiltrados(lista = []) {
     this.contenedor.innerHTML = '';
     lista.forEach(t => this.contenedor.appendChild(t.renderizar()));
   }

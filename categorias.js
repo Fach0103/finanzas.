@@ -1,30 +1,44 @@
 import { financeDB } from '../db.js';
+import { mostrarMensaje, resetearFormulario } from './utils.js';
 
+/**
+ * 🧠 Inicializa el módulo de categorías
+ */
 export function inicializarCategorias() {
-  cargarCategoriasSelect();
+  actualizarSelectsCategoria();
   prepararFormularioCategorias();
   renderizarListaCategorias();
 }
 
-function cargarCategoriasSelect() {
-  financeDB.getAllCategories()
-    .then(categories => {
-      const select = document.getElementById('categorySelect');
-      if (!select) return;
-
-      select.innerHTML = '<option value="">Selecciona una categoría</option>';
-      categories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat.id;
-        option.textContent = cat.name;
-        select.appendChild(option);
-      });
-    })
-    .catch(error => {
-      console.error('Error al cargar categorías:', error);
-    });
+/**
+ * 🔁 Refresca todos los <select> que usan categorías
+ */
+function actualizarSelectsCategoria() {
+  cargarCategoriasEnSelect('categorySelect');         // Transacciones
+  cargarCategoriasEnSelect('budgetCategorySelect');   // Presupuestos
 }
 
+/**
+ * 📤 Carga las categorías dentro de un <select>
+ */
+export function cargarCategoriasEnSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  select.innerHTML = '';
+  financeDB.getAllCategories().then(categorias => {
+    categorias.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.id;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+  });
+}
+
+/**
+ * ✍️ Prepara el formulario para agregar o editar categoría
+ */
 function prepararFormularioCategorias() {
   const form = document.getElementById('categoryForm');
   form?.addEventListener('submit', async (e) => {
@@ -37,16 +51,21 @@ function prepararFormularioCategorias() {
     if (editingId) {
       await financeDB.updateCategory(Number(editingId), { name });
       document.getElementById('editingCategoryId').value = '';
+      mostrarMensaje('resultado-categoria', '✏️ Categoría actualizada correctamente.');
     } else {
       await financeDB.addCategory({ name });
+      mostrarMensaje('resultado-categoria', '✅ Categoría agregada correctamente.');
     }
 
-    form.reset();
-    cargarCategoriasSelect();
+    resetearFormulario('#categoryForm');
     renderizarListaCategorias();
+    actualizarSelectsCategoria();
   });
 }
 
+/**
+ * 📋 Renderiza la lista completa de categorías
+ */
 async function renderizarListaCategorias() {
   const lista = document.getElementById('categoryList');
   lista.innerHTML = '';
@@ -77,8 +96,9 @@ async function renderizarListaCategorias() {
       const confirmado = confirm(`¿Eliminar la categoría "${cat.name}" y sus transacciones asociadas?`);
       if (confirmado) {
         await financeDB.deleteCategoryAndTransactions(cat.id);
-        cargarCategoriasSelect();
         renderizarListaCategorias();
+        actualizarSelectsCategoria();
+        mostrarMensaje('resultado-categoria', `🗑️ Categoría "${cat.name}" eliminada.`);
       }
     });
 

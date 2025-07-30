@@ -2,8 +2,8 @@ import { financeDB } from './db.js';
 import { inicializarNavegacion } from './js/sidebar.js';
 import { inicializarCategorias } from './js/categorias.js';
 import { inicializarDashboard } from './js/dashboard.js';
+import { inicializarGraficosDashboard } from './js/charts.js';
 import { TransaccionesManager } from './js/transaccion.js';
-
 import {
   definirPresupuesto,
   compararPresupuesto,
@@ -16,6 +16,7 @@ import {
   calcularDesviaciones,
   obtenerBalanceMensual
 } from './js/presupuesto.js';
+import { sincronizarSistema } from './js/utils.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   await financeDB.init();
@@ -27,39 +28,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   const manager = new TransaccionesManager('#lista-transacciones');
   let modoEdicionId = null;
 
-  const lista = await financeDB.obtenerTodas();
+  const lista = await financeDB.obtenerTodasTransacciones();
   manager.cargarDesdeLista(lista);
 
-  // 📊 Inicializar gráficos del dashboard
-  const presupuestos = obtenerPresupuesto(); // Función global
-  inicializarGraficosDashboard([], lista, presupuestos); // Función de charts.js
+  const presupuestos = obtenerPresupuesto();
+  inicializarGraficosDashboard([], lista, presupuestos);
 
-  // 📝 Gestión del formulario de transacción
+  // 📝 Transacciones
   const form = document.querySelector('#form-transaccion');
   form?.addEventListener('submit', async e => {
     e.preventDefault();
     const data = {
       id: modoEdicionId || crypto.randomUUID(),
       tipo: e.target.tipo.value,
-      monto: parseFloat(e.target.monto.value),
+      amount: parseFloat(e.target.monto.value),
       fecha: e.target.fecha.value,
-      categoria: e.target.categoria.value.trim(),
+      categoryId: parseInt(e.target.categoria.value),
       descripcion: e.target.descripcion.value.trim()
     };
     await financeDB.guardarTransaccion(data);
-    const actualizadas = await financeDB.obtenerTodas();
-    manager.cargarDesdeLista(actualizadas);
     form.reset();
     modoEdicionId = null;
-    inicializarDashboard();
-    inicializarGraficosDashboard([], actualizadas, obtenerPresupuesto());
+    await sincronizarSistema(manager);
+    inicializarGraficosDashboard([], await financeDB.obtenerTodasTransacciones(), obtenerPresupuesto());
   });
 
-  // 🛠️ Edición/Eliminación de transacciones
+  // 🛠️ Edición/Eliminación
   document.querySelector('#lista-transacciones')?.addEventListener('click', async e => {
     const id = e.target.dataset.id;
     if (e.target.classList.contains('btn-editar')) {
-      const lista = await financeDB.obtenerTodas();
+      const lista = await financeDB.obtenerTodasTransacciones();
       const transaccion = lista.find(t => t.id === id);
       if (transaccion) {
         modoEdicionId = transaccion.id;
@@ -71,23 +69,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (e.target.classList.contains('btn-eliminar')) {
       await financeDB.eliminarTransaccion(id);
-      const actualizadas = await financeDB.obtenerTodas();
-      manager.cargarDesdeLista(actualizadas);
-      inicializarDashboard();
-      inicializarGraficosDashboard([], actualizadas, obtenerPresupuesto());
+      await sincronizarSistema(manager);
+      inicializarGraficosDashboard([], await financeDB.obtenerTodasTransacciones(), obtenerPresupuesto());
     }
   });
 
-  // 🔶 EGRESOS – Gestión de presupuesto
-  document.querySelector('#btnGuardarPresupuesto')?.addEventListener('click', () => {
-    const categoria = document.querySelector('#inputCategoria').value;
+  // 🔶 Presupuesto de Egresos
+  document.querySelector('#btnGuardarPresupuesto')?.addEventListener('click', async () => {
+    const categoria = parseInt(document.querySelector('#budgetCategorySelect').value);
     const monto = parseFloat(document.querySelector('#inputMonto').value);
     const mes = parseInt(document.querySelector('#inputMes').value);
     const anio = parseInt(document.querySelector('#inputAnio').value);
 
-    definirPresupuesto(anio, mes, categoria, monto);
+    await definirPresupuesto(anio, mes, categoria, monto);
     document.querySelector('#resultado-presupuesto').innerText = '✅ Presupuesto de egreso guardado.';
-    inicializarGraficosDashboard([], lista, obtenerPresupuesto());
+    await sincronizarSistema(manager);
+    inicializarGraficosDashboard([], await financeDB.obtenerTodasTransacciones(), obtenerPresupuesto());
   });
 
   document.querySelector('#btnComparar')?.addEventListener('click', () => {
@@ -109,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `📈 Proyección mensual de egresos: ${proyeccion}`;
   });
 
-  // 🔷 INGRESOS – Estimación y análisis
+  // 🔷 Presupuesto de Ingresos
   document.querySelector('#btnGuardarIngreso')?.addEventListener('click', async () => {
     const monto = parseFloat(document.querySelector('#inputIngresoMonto').value);
     const mes = parseInt(document.querySelector('#inputIngresoMes').value);
@@ -117,8 +114,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await definirIngresoEstimado(anio, mes, monto);
     document.querySelector('#resultado-ingresos').innerText = '✅ Ingreso estimado guardado.';
-    const actualizadas = await financeDB.obtenerTodas();
-    inicializarGraficosDashboard([], actualizadas, obtenerPresupuesto());
+    await sincronizarSistema(manager);
+    inicializarGraficosDashboard([], await financeDB.obtenerTodasTransacciones(), obtenerPresupuesto());
   });
 
   document.querySelector('#btnCompararIngreso')?.addEventListener('click', () => {
@@ -137,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `📈 Proyección mensual de ingresos: ${proyeccion}`;
   });
 
-  // 🚨 DESVIACIONES – Análisis por categoría
+  // 🚨 Análisis de Desviaciones
   document.querySelector('#btnDesviaciones')?.addEventListener('click', () => {
     const mes = parseInt(document.querySelector('#inputMes').value);
     const anio = parseInt(document.querySelector('#inputAnio').value);
@@ -158,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelector('#resultado-desviaciones').innerText = mensaje;
   });
 
-  // 📊 BALANCE GENERAL – Comparativo de ingresos/egresos
+  // 📊 Balance General
   document.querySelector('#btnBalanceGeneral')?.addEventListener('click', () => {
     const mes = parseInt(document.querySelector('#inputMes').value);
     const anio = parseInt(document.querySelector('#inputAnio').value);

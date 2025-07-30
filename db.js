@@ -1,72 +1,83 @@
 class FinanceDB {
   constructor() {
     this.dbName = 'FinanzasApp';
-    this.dbVersion = 2; // ✅ Versión actual con soporte de ingresos estimados
+    this.dbVersion = 2;
     this.db = null;
+
     this.defaultCategories = [
       'Alimentación', 'Transporte', 'Ocio', 'Servicios',
       'Salud', 'Educación', 'Otros'
     ];
   }
 
-  // 🔌 Inicializar la base de datos
+  // 🔌 Inicializa la base de datos con stores
   async init() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
+      request.onupgradeneeded = ({ target }) => {
+        const db = target.result;
 
+        // Categorías
         if (!db.objectStoreNames.contains('categories')) {
           db.createObjectStore('categories', { keyPath: 'id', autoIncrement: true });
         }
 
+        // Transacciones
         if (!db.objectStoreNames.contains('transactions')) {
           const store = db.createObjectStore('transactions', { keyPath: 'id' });
-          store.createIndex('categoryId', 'categoryId', { unique: false });
+          store.createIndex('categoryId', 'categoryId');
         }
 
+        // Presupuestos
         if (!db.objectStoreNames.contains('budgets')) {
           db.createObjectStore('budgets', { keyPath: 'id' });
         }
 
+        // Presupuestos de ingresos
         if (!db.objectStoreNames.contains('incomeBudgets')) {
           db.createObjectStore('incomeBudgets', { keyPath: 'id' });
         }
       };
 
-      request.onsuccess = (event) => {
-        this.db = event.target.result;
-        const tx = this.db.transaction(['categories'], 'readwrite');
-        const store = tx.objectStore('categories');
-
-        store.getAll().onsuccess = (e) => {
-          const existing = e.target.result.map(cat => cat.name.toLowerCase());
-          this.defaultCategories.forEach(name => {
-            if (!existing.includes(name.toLowerCase())) {
-              store.add({ name });
-            }
-          });
-        };
-
-        resolve(true);
+      request.onsuccess = ({ target }) => {
+        this.db = target.result;
+        this.#ensureDefaultCategories().then(resolve).catch(reject);
       };
 
-      request.onerror = (event) => reject(event.target.error);
+      request.onerror = ({ target }) => reject(target.error);
+    });
+  }
+
+  // 🗂️ Asegura categorías iniciales
+  async #ensureDefaultCategories() {
+    const tx = this.db.transaction('categories', 'readwrite');
+    const store = tx.objectStore('categories');
+    const request = store.getAll();
+
+    return new Promise((resolve, reject) => {
+      request.onsuccess = ({ target }) => {
+        const existentes = target.result.map(c => c.name.toLowerCase());
+        this.defaultCategories.forEach(name => {
+          if (!existentes.includes(name.toLowerCase())) store.add({ name });
+        });
+        resolve();
+      };
+      request.onerror = ({ target }) => reject(target.error);
     });
   }
 
   // 📂 Categorías
   getAllCategories() {
-    return this.#getAllFromStore('categories');
+    return this.#getAll('categories');
   }
 
-  addCategory(categoria) {
-    return this.#addToStore('categories', categoria);
+  addCategory(data) {
+    return this.#add('categories', data);
   }
 
   updateCategory(id, data) {
-    return this.#putToStore('categories', { id, ...data });
+    return this.#put('categories', { id, ...data });
   }
 
   deleteCategoryAndTransactions(idCategoria) {
@@ -75,180 +86,150 @@ class FinanceDB {
       const catStore = tx.objectStore('categories');
       const tranStore = tx.objectStore('transactions');
 
-      const cursorRequest = tranStore.index('categoryId').openCursor(IDBKeyRange.only(idCategoria));
-      cursorRequest.onsuccess = (event) => {
-        const cursor = event.target.result;
-        if (cursor) {
-          cursor.delete();
-          cursor.continue();
+      const cursor = tranStore.index('categoryId').openCursor(IDBKeyRange.only(idCategoria));
+      cursor.onsuccess = ({ target }) => {
+        const c = target.result;
+        if (c) {
+          c.delete();
+          c.continue();
         }
       };
 
       catStore.delete(idCategoria).onsuccess = () => resolve(true);
-      catStore.delete(idCategoria).onerror = () => reject(catStore.delete(idCategoria).error);
+      catStore.delete(idCategoria).onerror = e => reject(e.target.error);
     });
   }
 
   // 💳 Transacciones
-  guardarTransaccion(transaccion) {
-    return this.#putToStore('transactions', transaccion);
+  guardarTransaccion(data) {
+    return this.#put('transactions', data);
   }
 
-  obtenerTodas() {
-    return this.#getAllFromStore('transactions');
+  obtenerTodasTransacciones() {
+    return this.#getAll('transactions');
   }
 
   eliminarTransaccion(id) {
-    return this.#deleteFromStore('transactions', id);
+    return this.#delete('transactions', id);
   }
 
-  // 🟧 Presupuesto de Egresos
-  guardarPresupuesto(presupuesto) {
-    const id = `${presupuesto.categoria}-${presupuesto.mes}-${presupuesto.anio}`;
-    return this.#putToStore('budgets', { id, ...presupuesto });
-  }
-
-  obtenerPresupuestoPorId(id) {
-    return this.#getFromStore('budgets', id);
+  // 🟧 Presupuestos de egresos
+  guardarPresupuestoEgreso(p) {
+    const id = `${p.categoria}-${p.mes}-${p.anio}`;
+    return this.#put('budgets', { id, ...p });
   }
 
   obtenerPresupuestos() {
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['budgets'], 'readonly');
+      const tx = this.db.transaction('budgets', 'readonly');
       const store = tx.objectStore('budgets');
-      const request = store.getAll();
+      const req = store.getAll();
 
-      request.onsuccess = () => {
-        const agrupados = {};
-        request.result.forEach(p => {
-          agrupados[p.anio] ||= {};
-          agrupados[p.anio][p.mes] ||= {};
-          agrupados[p.anio][p.mes][p.categoria] = p.monto;
-        });
-        resolve(agrupados);
+      req.onsuccess = () => {
+        const r = req.result.reduce((acc, p) => {
+          acc[p.anio] ||= {};
+          acc[p.anio][p.mes] ||= {};
+          acc[p.anio][p.mes][p.categoria] = p.monto;
+          return acc;
+        }, {});
+        resolve(r);
       };
 
-      request.onerror = () => reject(request.error);
+      req.onerror = () => reject(req.error);
     });
   }
 
-  obtenerGastos() {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['transactions'], 'readonly');
-      const store = tx.objectStore('transactions');
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const gastos = {};
-        request.result.forEach(t => {
-          if (t.tipo !== 'egreso') return;
-          const fecha = new Date(t.fecha);
-          const anio = fecha.getFullYear();
-          const mes = fecha.getMonth() + 1;
-
-          gastos[anio] ||= {};
-          gastos[anio][mes] ||= {};
-          gastos[anio][mes][t.categoria] ||= 0;
-          gastos[anio][mes][t.categoria] += t.monto;
-        });
-        resolve(gastos);
-      };
-
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  // 🟩 Presupuesto de Ingresos
-  guardarPresupuestoIngreso(presupuesto) {
-    const id = `${presupuesto.mes}-${presupuesto.anio}`;
-    return this.#putToStore('incomeBudgets', { id, ...presupuesto });
+  // 🟩 Presupuestos de ingresos
+  guardarPresupuestoIngreso(p) {
+    const id = `${p.mes}-${p.anio}`;
+    return this.#put('incomeBudgets', { id, ...p });
   }
 
   obtenerTodosIngresosEstimados() {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['incomeBudgets'], 'readonly');
-      const store = tx.objectStore('incomeBudgets');
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const agrupados = {};
-        request.result.forEach(p => {
-          agrupados[p.anio] ||= {};
-          agrupados[p.anio][p.mes] = p.monto;
-        });
-        resolve(agrupados);
-      };
-
-      request.onerror = () => reject(request.error);
+    return this.#aggregateStore('incomeBudgets', p => {
+      return { anio: p.anio, mes: p.mes, monto: p.monto };
     });
   }
 
   obtenerIngresosReales() {
+    return this.#aggregateStore('transactions', t => {
+      if (t.tipo !== 'ingreso') return null;
+      const fecha = new Date(t.fecha);
+      return { anio: fecha.getFullYear(), mes: fecha.getMonth() + 1, monto: t.monto };
+    });
+  }
+
+  obtenerGastosReales() {
+    return this.#aggregateStore('transactions', t => {
+      if (t.tipo !== 'egreso') return null;
+      const fecha = new Date(t.fecha);
+      return { anio: fecha.getFullYear(), mes: fecha.getMonth() + 1, categoria: t.categoria, monto: t.monto };
+    }, true);
+  }
+
+  // 🔒 Métodos internos
+  #getAll(store) {
+    return new Promise((res, rej) => {
+      const tx = this.db.transaction(store, 'readonly');
+      tx.objectStore(store).getAll().onsuccess = e => res(e.target.result);
+      tx.objectStore(store).getAll().onerror = e => rej(e.target.error);
+    });
+  }
+
+  #add(store, obj) {
+    return new Promise((res, rej) => {
+      const tx = this.db.transaction(store, 'readwrite');
+      tx.objectStore(store).add(obj).onsuccess = e => res(e.target.result);
+      tx.objectStore(store).add(obj).onerror = e => rej(e.target.error);
+    });
+  }
+
+  #put(store, obj) {
+    return new Promise((res, rej) => {
+      const tx = this.db.transaction(store, 'readwrite');
+      tx.objectStore(store).put(obj).onsuccess = () => res(true);
+      tx.objectStore(store).put(obj).onerror = e => rej(e.target.error);
+    });
+  }
+
+  #delete(store, id) {
+    return new Promise((res, rej) => {
+      const tx = this.db.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(id).onsuccess = () => res(true);
+      tx.objectStore(store).delete(id).onerror = e => rej(e.target.error);
+    });
+  }
+
+  // 🧠 Agrupación personalizada
+  #aggregateStore(store, transformFn, groupByCategory = false) {
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['transactions'], 'readonly');
-      const store = tx.objectStore('transactions');
-      const request = store.getAll();
+      const tx = this.db.transaction(store, 'readonly');
+      const s = tx.objectStore(store);
+      const req = s.getAll();
 
-      request.onsuccess = () => {
-        const ingresos = {};
-        request.result.forEach(t => {
-          if (t.tipo !== 'ingreso') return;
-          const fecha = new Date(t.fecha);
-          const anio = fecha.getFullYear();
-          const mes = fecha.getMonth() + 1;
+      req.onsuccess = () => {
+        const result = {};
+        req.result.forEach(item => {
+          const t = transformFn(item);
+          if (!t) return;
+          const { anio, mes, categoria, monto } = t;
+          result[anio] ||= {};
+          result[anio][mes] ||= groupByCategory ? {} : 0;
 
-          ingresos[anio] ||= {};
-          ingresos[anio][mes] ||= 0;
-          ingresos[anio][mes] += t.monto;
+          if (groupByCategory) {
+            result[anio][mes][categoria] ||= 0;
+            result[anio][mes][categoria] += monto;
+          } else {
+            result[anio][mes] += monto;
+          }
         });
-        resolve(ingresos);
+        resolve(result);
       };
 
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  // 🛠️ Métodos privados internos
-  #getAllFromStore(storeName) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([storeName], 'readonly');
-      tx.objectStore(storeName).getAll().onsuccess = (e) => resolve(e.target.result);
-      tx.objectStore(storeName).getAll().onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  #getFromStore(storeName, id) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([storeName], 'readonly');
-      tx.objectStore(storeName).get(id).onsuccess = (e) => resolve(e.target.result);
-      tx.objectStore(storeName).get(id).onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  #putToStore(storeName, object) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([storeName], 'readwrite');
-      tx.objectStore(storeName).put(object).onsuccess = () => resolve(true);
-      tx.objectStore(storeName).put(object).onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  #addToStore(storeName, object) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([storeName], 'readwrite');
-      tx.objectStore(storeName).add(object).onsuccess = (e) => resolve(e.target.result);
-      tx.objectStore(storeName).add(object).onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  #deleteFromStore(storeName, id) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([storeName], 'readwrite');
-      tx.objectStore(storeName).delete(id).onsuccess = () => resolve(true);
-      tx.objectStore(storeName).delete(id).onerror = (e) => reject(e.target.error);
+      req.onerror = () => reject(req.error);
     });
   }
 }
 
-// 🎯 Instancia exportada para uso global
+// 🎯 Exportación
 export const financeDB = new FinanceDB();

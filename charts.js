@@ -1,9 +1,11 @@
-// 🔧 Variables globales para mantener las instancias activas
+// 🔧 Instancias globales de gráficos
 let chartResumen = null;
 let chartTransacciones = null;
 let chartPresupuesto = null;
 
-// 🟩 Gráfico de resumen mensual
+/**
+ * 📊 Gráfico de resumen mensual (barras)
+ */
 function renderResumenMensual(ctx, datos) {
   const config = {
     type: 'bar',
@@ -17,12 +19,10 @@ function renderResumenMensual(ctx, datos) {
     },
     options: {
       responsive: true,
+      animation: { duration: 500 },
       plugins: {
         legend: { display: false },
-        title: {
-          display: true,
-          text: 'Resumen del Mes Actual'
-        }
+        title: { display: true, text: 'Resumen del Mes Actual' }
       }
     }
   };
@@ -35,7 +35,9 @@ function renderResumenMensual(ctx, datos) {
   }
 }
 
-// 📈 Gráfico de transacciones recientes
+/**
+ * 📈 Gráfico de transacciones recientes (línea)
+ */
 function renderTransaccionesRecientes(ctx, datos) {
   const config = {
     type: 'line',
@@ -51,11 +53,9 @@ function renderTransaccionesRecientes(ctx, datos) {
     },
     options: {
       responsive: true,
+      animation: { duration: 500 },
       plugins: {
-        title: {
-          display: true,
-          text: 'Transacciones Recientes'
-        }
+        title: { display: true, text: 'Transacciones Recientes' }
       }
     }
   };
@@ -69,7 +69,9 @@ function renderTransaccionesRecientes(ctx, datos) {
   }
 }
 
-// 💰 Gráfico de estado del presupuesto
+/**
+ * 💰 Gráfico de presupuesto actual (donut)
+ */
 function renderEstadoPresupuesto(ctx, datos) {
   const config = {
     type: 'doughnut',
@@ -83,14 +85,10 @@ function renderEstadoPresupuesto(ctx, datos) {
     },
     options: {
       responsive: true,
+      animation: { duration: 500 },
       plugins: {
-        title: {
-          display: true,
-          text: 'Estado del Presupuesto Actual'
-        },
-        legend: {
-          position: 'bottom'
-        }
+        title: { display: true, text: 'Estado del Presupuesto Actual' },
+        legend: { position: 'bottom' }
       }
     }
   };
@@ -103,14 +101,26 @@ function renderEstadoPresupuesto(ctx, datos) {
   }
 }
 
-// 🎯 Inicializar todos los gráficos del dashboard
-function inicializarGraficosDashboard(categorias, transacciones, presupuestos) {
+/**
+ * 🚀 Renderiza todos los gráficos del dashboard con protección de datos
+ */
+export function inicializarGraficosDashboard(categorias, transacciones = [], presupuestos = {}) {
   const resumen = calcularResumen(transacciones);
-  const recientes = transacciones.slice(-6);
-  const fechas = recientes.map(t => t.fecha);
-  const montos = recientes.map(t => t.amount);
 
-  const totalPresupuestado = presupuestos.reduce((sum, p) => sum + p.amount, 0);
+  const recientes = transacciones.slice(-6);
+  const fechas = recientes.map(t => t?.fecha ?? 'Sin fecha');
+  const montos = recientes.map(t => typeof t?.amount === 'number' ? t.amount : 0);
+
+  // 🛡️ Aseguramos que presupuestos sea un array válido
+  const presupuestosArray = Array.isArray(presupuestos)
+    ? presupuestos
+    : Object.values(presupuestos || {});
+
+  const totalPresupuestado = presupuestosArray.reduce((sum, p) => {
+    const monto = typeof p?.amount === 'number' ? p.amount : 0;
+    return sum + monto;
+  }, 0);
+
   const totalGastado = resumen.gastos;
   const restante = Math.max(0, totalPresupuestado - totalGastado);
 
@@ -134,13 +144,16 @@ function inicializarGraficosDashboard(categorias, transacciones, presupuestos) {
   }
 }
 
-// 🔍 Calcular resumen de ingresos/gastos
-function calcularResumen(transacciones) {
-  let ingresos = 0;
-  let gastos = 0;
-  transacciones.forEach(t => {
-    if (t.tipo === 'ingreso') ingresos += t.amount;
-    if (t.tipo === 'egreso') gastos += t.amount;
-  });
-  return { ingresos, gastos };
+/**
+ * 📌 Calcula resumen total de ingresos y gastos con fallback
+ */
+function calcularResumen(transacciones = []) {
+  return transacciones.reduce(
+    (acc, t) => {
+      if (t?.tipo === 'ingreso') acc.ingresos += typeof t.amount === 'number' ? t.amount : 0;
+      if (t?.tipo === 'egreso') acc.gastos += typeof t.amount === 'number' ? t.amount : 0;
+      return acc;
+    },
+    { ingresos: 0, gastos: 0 }
+  );
 }

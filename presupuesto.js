@@ -8,10 +8,12 @@ let ingresosReales = {};
 
 // 🔁 Recarga completa de datos
 async function recargarDatosEnMemoria() {
-  egresosEstimados = await financeDB.obtenerPresupuestos();
-  gastosReales = await financeDB.obtenerGastos();
-  ingresosEstimados = await financeDB.obtenerTodosIngresosEstimados();
-  ingresosReales = await financeDB.obtenerIngresosReales();
+  [egresosEstimados, gastosReales, ingresosEstimados, ingresosReales] = await Promise.all([
+    financeDB.obtenerPresupuestos(),
+    financeDB.obtenerGastosReales(),
+    financeDB.obtenerTodosIngresosEstimados(),
+    financeDB.obtenerIngresosReales()
+  ]);
 }
 
 // 🔄 Inicialización
@@ -24,12 +26,11 @@ export async function inicializarPresupuesto() {
 ///////////////////////////////////////
 
 export async function definirPresupuesto(anio, mes, categoria, monto) {
-  if (!egresosEstimados[anio]) egresosEstimados[anio] = {};
-  if (!egresosEstimados[anio][mes]) egresosEstimados[anio][mes] = {};
+  egresosEstimados[anio] ??= {};
+  egresosEstimados[anio][mes] ??= {};
   egresosEstimados[anio][mes][categoria] = monto;
 
-  const presupuesto = { anio, mes, categoria, monto };
-  await financeDB.guardarPresupuesto(presupuesto);
+  await financeDB.guardarPresupuestoEgreso({ anio, mes, categoria, monto });
   await recargarDatosEnMemoria();
 }
 
@@ -62,7 +63,13 @@ export function proyectarEgresosMensuales(mes) {
 }
 
 export function obtenerPresupuesto(anio, mes) {
-  return egresosEstimados[anio]?.[mes] || {};
+  const presupuestos = egresosEstimados[anio]?.[mes] || {};
+
+  // ✅ Devuelve array compatible con gráficos
+  return Object.entries(presupuestos).map(([categoriaId, monto]) => ({
+    categoriaId: parseInt(categoriaId),
+    amount: typeof monto === 'number' ? monto : 0
+  }));
 }
 
 ///////////////////////////////////////
@@ -70,7 +77,7 @@ export function obtenerPresupuesto(anio, mes) {
 ///////////////////////////////////////
 
 export async function definirIngresoEstimado(anio, mes, monto) {
-  if (!ingresosEstimados[anio]) ingresosEstimados[anio] = {};
+  ingresosEstimados[anio] ??= {};
   ingresosEstimados[anio][mes] = monto;
 
   await financeDB.guardarPresupuestoIngreso({ anio, mes, monto });
@@ -80,11 +87,7 @@ export async function definirIngresoEstimado(anio, mes, monto) {
 export function compararIngresos(anio, mes) {
   const estimado = ingresosEstimados[anio]?.[mes] || 0;
   const real = ingresosReales[anio]?.[mes] || 0;
-  return {
-    estimado,
-    real,
-    diferencia: estimado - real
-  };
+  return { estimado, real, diferencia: estimado - real };
 }
 
 export function proyectarIngresosMensuales(mes) {
@@ -117,7 +120,6 @@ export function obtenerIngresoReal(anio, mes) {
 export function calcularDesviaciones(anio, mes) {
   const estimado = egresosEstimados[anio]?.[mes] || {};
   const real = gastosReales[anio]?.[mes] || {};
-
   const resultado = {};
 
   for (const categoria in estimado) {
@@ -136,7 +138,6 @@ export function calcularDesviaciones(anio, mes) {
   return resultado;
 }
 
-// 🔍 Categorías críticas por desviaciones frecuentes
 export function detectarCategoriasCriticas() {
   const criticas = {};
 
@@ -145,7 +146,7 @@ export function detectarCategoriasCriticas() {
       const alertas = calcularDesviaciones(anio, mes);
       for (const categoria in alertas) {
         if (alertas[categoria].alerta) {
-          criticas[categoria] ||= 0;
+          criticas[categoria] ??= 0;
           criticas[categoria]++;
         }
       }
@@ -153,7 +154,7 @@ export function detectarCategoriasCriticas() {
   }
 
   return Object.entries(criticas)
-    .sort((a, b) => b[1] - a[1])
+    .sort(([, a], [, b]) => b - a)
     .reduce((acc, [cat, count]) => {
       acc[cat] = count;
       return acc;
@@ -180,14 +181,13 @@ export function obtenerBalanceMensual(anio, mes) {
   };
 }
 
-// 📆 Total anual por categoría
 export function obtenerResumenAnual(anio) {
   const resumen = {};
   const gastos = gastosReales[anio] || {};
 
   for (const mes in gastos) {
     for (const categoria in gastos[mes]) {
-      resumen[categoria] ||= 0;
+      resumen[categoria] ??= 0;
       resumen[categoria] += gastos[mes][categoria];
     }
   }

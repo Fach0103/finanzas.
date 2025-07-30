@@ -12,8 +12,6 @@
   <link rel="stylesheet" href="css/transaccion.css" />
   <link rel="stylesheet" href="css/presupuesto.css" />
   <link rel="stylesheet" href="css/charts.css" />
-
-  <!-- 🔧 Favicon temporal para evitar errores -->
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -56,14 +54,19 @@
               <option value="ingreso">Ingreso</option>
               <option value="egreso">Egreso</option>
             </select>
+
             <label for="monto">Monto:</label>
             <input type="number" id="monto" step="0.01" required />
-            <label for="categoria">Categoría:</label>
-            <input type="text" id="categoria" required />
+
+            <label for="categorySelect">Categoría:</label>
+            <select id="categorySelect" required></select>
+
             <label for="fecha">Fecha:</label>
             <input type="date" id="fecha" required />
+
             <label for="descripcion">Descripción:</label>
             <input type="text" id="descripcion" required />
+
             <button type="submit">Registrar</button>
           </fieldset>
         </form>
@@ -86,22 +89,18 @@
         <h2>Gestión de Presupuesto Estimado</h2>
 
         <form id="form-presupuesto">
-          <label for="inputCategoria">Categoría:</label>
-          <select id="inputCategoria">
-            <option value="Alimentación">Alimentación</option>
-            <option value="Transporte">Transporte</option>
-            <option value="Ocio">Ocio</option>
-            <option value="Servicios">Servicios</option>
-            <option value="Salud">Salud</option>
-            <option value="Educación">Educación</option>
-            <option value="Otros">Otros</option>
-          </select>
+          <label for="budgetCategorySelect">Categoría:</label>
+          <select id="budgetCategorySelect" required></select>
+
           <label for="inputMonto">Monto estimado:</label>
           <input type="number" id="inputMonto" step="0.01" />
+
           <label for="inputMes">Mes:</label>
           <input type="number" id="inputMes" min="1" max="12" />
+
           <label for="inputAnio">Año:</label>
           <input type="number" id="inputAnio" min="2000" max="2100" />
+
           <div class="presupuesto-buttons">
             <button type="button" id="btnGuardarPresupuesto">Guardar</button>
             <button type="button" id="btnComparar">Comparar vs Real</button>
@@ -123,6 +122,7 @@
           <input type="number" id="inputIngresoMes" min="1" max="12" />
           <label for="inputIngresoAnio">Año:</label>
           <input type="number" id="inputIngresoAnio" min="2000" max="2100" />
+
           <div class="ingreso-buttons">
             <button type="button" id="btnGuardarIngreso">Guardar</button>
             <button type="button" id="btnCompararIngreso">Comparar vs Real</button>
@@ -134,11 +134,13 @@
     </main>
   </div>
 
-  <!-- 📊 Chart.js + funciones gráficas sin módulos -->
+  <!-- 📊 Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="charts.js"></script>
 
-  <!-- 🚀 Script de arranque modular -->
-  <script type="module" src="app.js"></script>
+  <!-- 📈 Módulo de gráficos -->
+  <script type="module" src="./js/charts.js"></script>
+
+  <!-- 🚀 Arranque principal -->
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
